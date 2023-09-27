@@ -27,11 +27,12 @@ fn gen_all_dr(){
     for idx in 0..states.len()-1{
         println!("Optimal: {}. States: {}",idx,states[idx].len());
         let mut next_states: FxHashSet<Cube> = FxHashSet::default();
-        i+=1;
-        if i%1_000_000 == 0{
-            println!("{},{}",i, next_states.len())
-        }
+        
         for state in &states[idx] {
+            i+=1;
+            if i%1_000_000 == 0{
+                println!("{},{}",i, next_states.len())
+            }
             for movee in &moves{
                 let new_state = &state.perform_move(*movee);
                 if idx > 0{
