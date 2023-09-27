@@ -22,11 +22,15 @@ fn gen_all_dr(){
     let mut states: [FxHashSet<Cube>; 14] = Default::default();
 
     states[0].insert(c);
-
+    let mut i = 0;
     // println!("{:?}",states);
     for idx in 0..states.len()-1{
         println!("Optimal: {}. States: {}",idx,states[idx].len());
         let mut next_states: FxHashSet<Cube> = FxHashSet::default();
+        i+=1;
+        if i%1_000_000 == 0{
+            println!("{},{}",i, next_states.len())
+        }
         for state in &states[idx] {
             for movee in &moves{
                 let new_state = &state.perform_move(*movee);
