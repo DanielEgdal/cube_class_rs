@@ -88,5 +88,5 @@ fn main(){
     };
     println!("{:?}",o);
 
-    other_dr();
+    gen_all_dr();
 }
