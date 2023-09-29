@@ -472,7 +472,6 @@ impl Cube {
                 _ => unreachable!()
             }).collect();
     
-        // println!("{:?}",split_scramble);
         for movei in &split_scramble{
             self = self.perform_move(*movei);
         }
@@ -486,12 +485,10 @@ impl Cube {
 
 // fn main(){
 //     let mut c = Cube::new();
-//     // println!("{:?}",c);
 //     // let (mut z, scramble_vec) = c.do_scramble("R' U' F R2 B R2 D B L F' R D2 R' U2 L' F2 R' D2 F2 R B U' R' U' F".to_string());
 //     // for i in 0..10000000 {
 //     //     let (new_z, scramble_vec2) = z.do_scramble("F2 U' F' U' L R2 U B R' D2 R U2 R' D' B D' B R' B2 R B U R'".to_string());
 //     //     z = new_z;
-//     //     // println!("{:?}",z);
 //     // }
 //     for i in 0..1_000_000_001 {
 //         let z = c.f();

@@ -1,9 +1,13 @@
 mod cube;
+mod drawing;
 use std::collections::VecDeque;
 // use std::collections::HashSet;
 // use std::collections::HashMap;
 use rustc_hash::FxHashMap;
 use rustc_hash::FxHashSet;
+use std::fs::File;
+use std::io::Write;
+
 
 use cube::Cube;
 
@@ -83,11 +87,40 @@ fn other_dr(){
 }
 
 fn main(){
-    let o =  Cube{
-        corners: 70936234050,
-        edges: 74381997087197250,
-    };
-    println!("{:?}",o);
+    // let o =  Cube{
+    //     corners: 70936234050,
+    //     edges: 74381997087197250,
+    // };
 
-    gen_all_dr();
+    // println!("{:?}",o);
+
+    // gen_all_dr();
+
+    // let svg = drawing::example();
+    // println!("{svg}");
+
+    // let number: u64 = 42;
+    // let binary_string = format!("{:b}", number);
+    // println!("Binary representation: {}", binary_string);
+
+    let o = Cube{
+        corners: 247132686368,
+        edges: 407901468851537952,
+    };
+
+    let (o, trash) = o.do_scramble("F' B2 L B' U' B' R D2 F R2 L2 F B L2 D2 F' R2 U2 B' R' F2".to_string());
+
+    let mut a = drawing::get_cube_svg(o);
+    // for i in 0..1_000_000{
+    //     let c = drawing::get_cube_svg(o);
+    //     a = c;
+    // }
+    // println!("{}",a);
+
+    // let mut file = File::create("t2.svg").expect("creating file");
+
+    // // Write data to the file
+    // file.write_all(&a.as_bytes());
+    // Ok(())
+
 }
