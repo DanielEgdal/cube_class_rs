@@ -1,13 +1,12 @@
-use std::collections::HashMap;
-
 use crate::cube::Cube;
+use crate::cube_bfs;
 
-const FULL_IMAGE_SIZE: u32 = 450;
-const SQUARE_SIZE: u32 = FULL_IMAGE_SIZE/12;
+const FULL_IMAGE_SIZE: u32 = 280;
+const SQUARE_SIZE: u32 = ((FULL_IMAGE_SIZE-30)/12);
 
 const FULL_TEMPLATE: &str = r#"
-    <svg xmlns="http://www.w3.org/2000/svg" width="{FULL_IMAGE_SIZE}" height="{FULL_IMAGE_SIZE}" version="1.1">
-        <rect x="0" y="0" width="{FULL_IMAGE_SIZE}" height="{FULL_IMAGE_SIZE}" fill="white"/>
+    <svg xmlns="http://www.w3.org/2000/svg" width="{width_image}" height="{height_image}" version="1.1">
+        <rect x="0" y="0" width="{width_image}" height="{height_image}" fill="none"/>
         {layers}
     </svg>
 "#;
@@ -185,8 +184,8 @@ fn make_layer(x_start: u32, y_start: u32, colours: [&str;9]) -> String {
     for i in 0..3 {
         for j in 0..3 {
             let c = colours[((i * 3) + j) as usize];
-            let x = x_start + (SQUARE_SIZE * j);
-            let y = y_start + (SQUARE_SIZE * i);
+            let x = (x_start+2) + (SQUARE_SIZE * j);
+            let y = (y_start+2) + (SQUARE_SIZE * i);
             // println!("{c} {x} {y} ");
             let sticker = format!(
                 r#"<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="{c}" stroke="black" stroke-width="2"/>"#,
@@ -205,13 +204,13 @@ fn make_layer(x_start: u32, y_start: u32, colours: [&str;9]) -> String {
 pub fn get_cube_svg(cube:Cube) -> String{
     let mut svg_layers = String::new();
     let coloured_layers = get_colours_from_cube(cube);
-    svg_layers += &make_layer(3*SQUARE_SIZE,0,coloured_layers[0]);
-    svg_layers += &make_layer(9*SQUARE_SIZE,3*SQUARE_SIZE,coloured_layers[1]);
-    svg_layers += &make_layer(0,3*SQUARE_SIZE,coloured_layers[2]);
-    svg_layers += &make_layer(6*SQUARE_SIZE,3*SQUARE_SIZE,coloured_layers[3]);
-    svg_layers += &make_layer(3*SQUARE_SIZE,3*SQUARE_SIZE,coloured_layers[4]);
-    svg_layers += &make_layer(3*SQUARE_SIZE,6*SQUARE_SIZE,coloured_layers[5]);
-    let result = FULL_TEMPLATE.replace("{layers}", &svg_layers).replace("{FULL_IMAGE_SIZE}", &FULL_IMAGE_SIZE.to_string());
+    svg_layers += &make_layer((3*SQUARE_SIZE)+5,0,coloured_layers[0]);
+    svg_layers += &make_layer((9*SQUARE_SIZE)+15,(3*SQUARE_SIZE)+5,coloured_layers[1]);
+    svg_layers += &make_layer(0,(3*SQUARE_SIZE)+5,coloured_layers[2]);
+    svg_layers += &make_layer((6*SQUARE_SIZE)+10,(3*SQUARE_SIZE)+5,coloured_layers[3]);
+    svg_layers += &make_layer((3*SQUARE_SIZE)+5,(3*SQUARE_SIZE)+5,coloured_layers[4]);
+    svg_layers += &make_layer((3*SQUARE_SIZE)+5,(6*SQUARE_SIZE)+10,coloured_layers[5]);
+    let result = FULL_TEMPLATE.replace("{layers}", &svg_layers).replace("{width_image}", &FULL_IMAGE_SIZE.to_string()).replace("{height_image}", &((FULL_IMAGE_SIZE/12)*9).to_string());
     result
 }
 
@@ -223,3 +222,72 @@ pub fn get_cube_svg(cube:Cube) -> String{
 //     // println!("{}", result);
 //     result
 // }
+
+const HTML_SHOW_SOLUTIONS: &str = r#"
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400&display=swap');
+        * {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 500;
+            font-size: 40px;
+            background-color: #32333b;
+            color: #f5f5f5;
+        }
+        .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    {sol_scramble}
+</body>
+</html>"#;
+
+
+pub fn show_all_dr_by_ec(dr_corner_count: u8, dr_edge_count: u8)->String{
+    let mut solution_svgs = String::new();
+    let solutions = cube_bfs::gen_all_dr_solutions();
+    let mut k: Vec<_> = solutions.values().collect();
+    k.sort_by(|a, b| a.get_solution_from_scr().len().cmp(&b.get_solution_from_scr().len()));
+    let mut hits = 0;
+    for o in k{
+        // println!("{} {} ", o.dr_corner_count(),o.dr_edge_count());
+        if (o.dr_corner_count() == dr_corner_count) && (o.dr_edge_count() == dr_edge_count){
+            let solution = o.get_solution_from_scr();
+            if [3, 4, 13, 14, 23, 24].contains(&solution[0]){
+                continue
+            }
+            hits+=1;
+            // println!("{}",solution.len());
+        
+            let solution_string = cube_bfs::int_moves_to_str(solution);
+            let mut new_cube: Cube = Cube::new(); // This is needed because the other was an DR only scramble
+            for movee in o.moves{
+                new_cube = new_cube.perform_move(movee);
+            }
+            let svg: String = get_cube_svg(new_cube);
+
+            let line = r#" <div class="container">
+                                <p>{Solution}</p>
+                                {SVG}
+                            </div>"#;
+            
+            // println!("{} {:?} ",svg,solution_string);
+            let result = line.replace("{Solution}", &solution_string).replace("{SVG}", &svg);
+            // println!("{result} ");
+            solution_svgs += &result;
+            // break
+        }
+    }
+    // println!("{} ",solution_svgs.len());
+    println!("{hits} ");
+
+    let result = HTML_SHOW_SOLUTIONS.replace("{sol_scramble}", &solution_svgs);
+    result
+}

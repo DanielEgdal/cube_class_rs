@@ -1,4 +1,5 @@
 mod cube;
+mod cube_bfs;
 mod drawing;
 use std::collections::VecDeque;
 // use std::collections::HashSet;
@@ -10,17 +11,18 @@ use std::io::Write;
 
 
 use cube::Cube;
+// use crate::cube_bfs;
 
 
 fn gen_all_dr(){
-    // let c = Cube{
-    //     corners: 70936234050,
-    //     edges: 74381997087197250,
-    // };
     let c = Cube{
-            corners: 69828936738,
-            edges: 74381997087264900,
-        };
+        corners: 70936234050,
+        edges: 74381997087197250,
+    };
+    // let c = Cube{
+    //         corners: 69828936738,
+    //         edges: 74381997087264900,
+    //     };
     let moves:Vec<u8> = vec![1, 2, 3, 4, 11, 12, 13, 14, 15, 16, 21, 22, 23, 24];
 
     let mut states: [FxHashSet<Cube>; 14] = Default::default();
@@ -58,9 +60,14 @@ fn gen_all_dr(){
 }
 
 fn other_dr(){
+    // let c = Cube{
+    //     corners: 69828936738,
+    //     edges: 74381997087264900,
+    // };
+
     let c = Cube{
-        corners: 69828936738,
-        edges: 74381997087264900,
+        corners: 70936234050,
+        edges: 74381997087197250,
     };
 
     let mut set: FxHashSet<Cube> = FxHashSet::default();
@@ -77,7 +84,7 @@ fn other_dr(){
             for movee in &moves{
                 let new_state = &nc.perform_move(*movee);
                 if !set.contains(&new_state){
-                    set.insert(nc);
+                    set.insert(*new_state);
                     q.push_back(*new_state);
                 }
             }
@@ -94,6 +101,33 @@ fn main(){
 
     // println!("{:?}",o);
 
+    // other_dr();
+    let res = drawing::show_all_dr_by_ec(4,2);
+
+    let mut file = File::create("full.html").expect("creating file");
+
+    // Write data to the file
+    file.write_all(&res.as_bytes());
+    // Ok(())
+    // let solutions = cube_bfs::gen_all_dr_solutions();
+    // let k = solutions.values();
+    // let mut p = 0;
+    // for o in k{
+    //     // if (o.dr_corner_count() >3) && (o.dr_edge_count() >1){
+    //         let solution = o.get_solution_from_scr();
+        
+    //         let solution_string = cube_bfs::int_moves_to_str(solution);
+    //         let mut new_cube = Cube::new();
+    //         for movee in o.moves{
+    //             new_cube = new_cube.perform_move(movee);
+    //         }
+    //         let svg = drawing::get_cube_svg(new_cube);
+            
+    //         println!("{} {:?} ",svg,solution_string);
+    //         break;
+        
+    // }
+    // println!("{p} ");
     // gen_all_dr();
 
     // let svg = drawing::example();
@@ -103,14 +137,14 @@ fn main(){
     // let binary_string = format!("{:b}", number);
     // println!("Binary representation: {}", binary_string);
 
-    let o = Cube{
-        corners: 247132686368,
-        edges: 407901468851537952,
-    };
+    // let o = Cube{
+    //     corners: 247132686368,
+    //     edges: 407901468851537952,
+    // };
 
-    let (o, trash) = o.do_scramble("F' B2 L B' U' B' R D2 F R2 L2 F B L2 D2 F' R2 U2 B' R' F2".to_string());
+    // let (o, trash) = o.do_scramble("F' B2 L B' U' B' R D2 F R2 L2 F B L2 D2 F' R2 U2 B' R' F2".to_string());
 
-    let mut a = drawing::get_cube_svg(o);
+    // let mut a = drawing::get_cube_svg(o);
     // for i in 0..1_000_000{
     //     let c = drawing::get_cube_svg(o);
     //     a = c;
