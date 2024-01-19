@@ -102,12 +102,13 @@ fn main(){
     // println!("{:?}",o);
 
     // other_dr();
-    let res = drawing::show_all_dr_by_ec(4,2);
+    let tmp = cube_bfs::gen_all_htr_solutions();
+    // let res = drawing::show_all_dr_by_ec(4,2);
 
-    let mut file = File::create("full.html").expect("creating file");
+    // let mut file = File::create("full.html").expect("creating file");
 
-    // Write data to the file
-    file.write_all(&res.as_bytes());
+    // // Write data to the file
+    // file.write_all(&res.as_bytes());
     // Ok(())
     // let solutions = cube_bfs::gen_all_dr_solutions();
     // let k = solutions.values();

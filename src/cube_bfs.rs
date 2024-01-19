@@ -7,7 +7,7 @@ use crate::cube::Cube;
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)] 
 pub struct Cube_BFS {
     pub cube: Cube,
-    pub moves: [u8;11],
+    pub moves: [u8;20], // Probably 11 when looking at dr
     pub depth: usize,
 }
 
@@ -66,7 +66,7 @@ pub fn gen_all_dr_solutions()->FxHashMap<Cube,Cube_BFS>{
 
     let start_cube = Cube_BFS{
         cube: c,
-        moves: [0;11],
+        moves: [0;20],
         depth: 0,
     };
 
@@ -89,6 +89,45 @@ pub fn gen_all_dr_solutions()->FxHashMap<Cube,Cube_BFS>{
         }
     }
     println!("{}",solutions.len());
+
+    solutions
+
+}
+
+pub fn gen_all_htr_solutions()->FxHashMap<Cube,Cube_BFS>{
+    let c = Cube{
+        corners: 247132686368,
+        edges: 38390725336148332
+    };
+
+    let start_cube = Cube_BFS{
+        cube: c,
+        moves: [0;20],
+        depth: 0,
+    };
+
+    let mut solutions: FxHashMap<Cube,Cube_BFS> = FxHashMap::default();
+    let mut overview = [0;20];
+    let moves:Vec<u8> = vec![11, 12, 13, 14, 15, 16];
+    let mut q:VecDeque<Cube_BFS> = VecDeque::from(vec![start_cube]);
+
+    let mut i = 0;
+    while let Some(nc) = q.pop_front(){
+        i+=1;
+        if i%1_000_000 == 0{
+            println!("{},{}",i, solutions.len())
+        }
+        for movee in &moves{
+            let new_state = &nc.apply_move(*movee);
+            if !solutions.contains_key(&new_state.cube){
+                overview[new_state.depth as usize] +=1;
+                solutions.insert(new_state.cube,new_state.clone());
+                q.push_back(*new_state);
+            }
+        }
+    }
+    // println!("{}",solutions.len());
+    println!("{:?}",overview);
 
     solutions
 

@@ -3,6 +3,37 @@ pub struct Cube {
     pub corners: u64,
     pub edges: u64,
 }
+trait BaseCube {
+    fn u(mut self)-> Self{
+        let mut e = self.edges;
+        let mut c = self.corners;
+
+        let block1 = (c >> 20) & 31;
+        let block2 = (c >> 25) & 31;
+        let block3 = (c >> 30) & 31;
+        let block4 = (c >> 35) & 31;
+    
+        c = c & 34084861509631;
+        c = c ^ (( block1 << 25) | ( block2 << 35) |( block3 << 20 ) |( block4 << 30));
+    
+        let block1 = (e >> 40) & 31;
+        let block2 = (e >> 45) & 31;
+        let block3 = (e >> 50) & 31;
+        let block4 = (e >> 55) & 31;
+        e = e & 1099511627775;
+        e = e ^ (( block1 << 45) | ( block2 << 55) |( block3 << 40) |( block4 << 50));
+    
+        self.edges = e;
+        self.corners = c;
+        
+        self
+    }
+
+}
+
+impl BaseCube for Cube{
+
+}
 
 impl Cube {
 
