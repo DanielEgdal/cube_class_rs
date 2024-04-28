@@ -1,161 +1,175 @@
-mod cube;
+mod base_cube;
 mod cube_bfs;
-mod drawing;
-use std::collections::VecDeque;
-// use std::collections::HashSet;
-// use std::collections::HashMap;
-use rustc_hash::FxHashMap;
-use rustc_hash::FxHashSet;
-use std::fs::File;
-use std::io::Write;
+use rayon::collections::binary_heap::Iter;
+// use base_cube::BaseCube;
+use rayon::prelude::*;
+use rustc_hash::{FxHashMap,FxHashSet};
+use crate::base_cube::*;
+use crate::cube_bfs::*;
+// use std::fs::File;
+// use std::io::Write;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
+use rand::prelude::IteratorRandom;
 
+fn get_dist_subset<'a>(u_edges: &'a usize, u_corners: &'a usize, dist: &'a FxHashMap<DRToHTRCube,Cube_BFS>) -> Vec<(&'a DRToHTRCube,&'a Cube_BFS)> { // impl Iterator<Item = (&'a base_cube::DRToHTRCube, &'a cube_bfs::Cube_BFS)>
+    let dist_filtered: Vec<_> = dist.iter()
+        // .map(| (&cube, bfs) | (cube.count_non_htr_edges(),cube.count_non_htr_corners(), bfs.moves))
+        .filter(|(cube,bfs)| cube.edges_minus() as usize == *u_edges && cube.corners_minus() as usize== *u_corners)
+        // .map(|(cube,bfs)| (cube,bfs.moves))
+        .collect();
 
-use cube::Cube;
-// use crate::cube_bfs;
+    dist_filtered
+}
 
+fn get_random_case_of_len(len: usize, dist: &FxHashMap<DRToHTRCube,Cube_BFS>, htr_checker: &FxHashSet<DRToHTRCube>) -> Result<(String, String),String>{
+    // let keys: Vec<_> = dist.keys().collect();
+    // while let Some(chosen) =  keys.choose(&mut rand::thread_rng()){
+    loop {
+        if let Some((chosen, bfs_res)) = dist.iter().choose(&mut rand::thread_rng()){
+            let solution = Cube_BFS::dr_to_htr_fixed_len(*chosen, &htr_checker, len);
+            match solution{
+                Ok(s) => return Ok((Cube_BFS::int_moves_to_str(bfs_res.moves.to_vec()), Cube_BFS::int_moves_to_str(s.to_vec()))),
+                Err(e) => continue, 
+            }
+        }
+        else{
+            return Err("Somehow failed".to_string())
+        }
+    }
+}
 
-fn gen_all_dr(){
-    let c = Cube{
-        corners: 70936234050,
-        edges: 74381997087197250,
-    };
-    // let c = Cube{
-    //         corners: 69828936738,
-    //         edges: 74381997087264900,
-    //     };
-    let moves:Vec<u8> = vec![1, 2, 3, 4, 11, 12, 13, 14, 15, 16, 21, 22, 23, 24];
+fn get_further_selected_case<'a>(len: usize, qt_len: usize, cases: &Vec<(&DRToHTRCube, &Cube_BFS)>, htr_checker: &FxHashSet<DRToHTRCube>) -> Result<(String, String),String>{
+    loop {
+        if let Some((chosen, bfs_res)) = cases.iter().choose(&mut rand::thread_rng()){
+            let solution = Cube_BFS::dr_to_htr_max_len_fixed_qt(**chosen, &htr_checker, len, qt_len);
+            match solution{
+                Ok(s) => return Ok((Cube_BFS::int_moves_to_str(bfs_res.moves.to_vec()), Cube_BFS::int_moves_to_str(s.to_vec()))),
+                Err(e) => continue, 
+            }
+        }
+        else{
+            return Err("Somehow failed".to_string())
+        }
+    }
+}
 
-    let mut states: [FxHashSet<Cube>; 14] = Default::default();
-
-    states[0].insert(c);
-    let mut i = 0;
-    // println!("{:?}",states);
-    for idx in 0..states.len()-1{
-        println!("Optimal: {}. States: {}",idx,states[idx].len());
-        let mut next_states: FxHashSet<Cube> = FxHashSet::default();
+fn htr_practice(){
+    let bfs = Cube_BFS::dr_to_htr_dist();
+    let htr_checker = cube_bfs::Cube_BFS::dr_to_htr_checker();
+    let htr_minus: Vec<(&DRToHTRCube, &Cube_BFS)> = get_dist_subset(&4,&4,&bfs);
+    println!("htrminus size {}",htr_minus.len());
+    let mut start_vec = vec![];
+    for i in 0..10{
+        // start_vec.push(get_random_case_of_len(6,&bfs,&htr_checker).unwrap())
+        start_vec.push(get_further_selected_case(7, 2,&htr_minus,&htr_checker).unwrap())
         
-        for state in &states[idx] {
-            i+=1;
-            if i%1_000_000 == 0{
-                println!("{},{}",i, next_states.len())
-            }
-            for movee in &moves{
-                let new_state = &state.perform_move(*movee);
-                if idx > 0{
-                    if !states[idx].contains(new_state) && !states[idx-1].contains(new_state){
-                        next_states.insert(*new_state);
-                    }
-                }
-                else {
-                    if !states[idx].contains(new_state){
-                        next_states.insert(*new_state);
-                    }
-                }
-        }
-        }
-        states[idx + 1] = next_states;
     }
-
-    // let mut q:VecDeque<(u64, u64, [u8;8],u8)> = VecDeque::new();
+    println!("{:?}",start_vec);
 }
 
-fn other_dr(){
-    // let c = Cube{
-    //     corners: 69828936738,
-    //     edges: 74381997087264900,
-    // };
 
-    let c = Cube{
-        corners: 70936234050,
-        edges: 74381997087197250,
-    };
+fn dr_get_dist_subset<'a>(u_edges: &'a usize, u_corners: &'a usize, dist: &'a FxHashMap<EOToDRCube,DR_Cube_BFS>) -> Vec<(&'a EOToDRCube,&'a DR_Cube_BFS)> { // impl Iterator<Item = (&'a base_cube::DRToHTRCube, &'a cube_bfs::Cube_BFS)>
+    let dist_filtered: Vec<_> = dist.iter()
+        // .map(| (&cube, bfs) | (cube.count_non_htr_edges(),cube.count_non_htr_corners(), bfs.moves))
+        .filter(|(cube,bfs)| cube.edges_minus() as usize == *u_edges && cube.corners_minus() as usize== *u_corners)
+        // .map(|(cube,bfs)| (cube,bfs.moves))
+        .collect();
 
-    let mut set: FxHashSet<Cube> = FxHashSet::default();
-    let moves:Vec<u8> = vec![1, 2, 3, 4, 11, 12, 13, 14, 15, 16, 21, 22, 23, 24];
-    let mut q:VecDeque<Cube> = VecDeque::from(vec![c]);
-    let mut i = 0;
-    while let Some(nc) = q.pop_front(){
-        i+=1;
-        if i%1_000_000 == 0{
-            println!("{},{}",i, set.len())
-        }
-        // if !set.contains(&nc){
-            // set.insert(nc);
-            for movee in &moves{
-                let new_state = &nc.perform_move(*movee);
-                if !set.contains(&new_state){
-                    set.insert(*new_state);
-                    q.push_back(*new_state);
-                }
-            }
-        // }
-    }
-    println!("{}", set.len())
+    dist_filtered
 }
+
+fn dr_get_random_case_of_len(len: usize, dist: &Vec<(&EOToDRCube, &DR_Cube_BFS)>) -> Result<(String),String>{
+    // let keys: Vec<_> = dist.keys().collect();
+    // while let Some(chosen) =  keys.choose(&mut rand::thread_rng()){
+    loop {
+        if let Some((chosen, bfs_res)) = dist.iter().choose(&mut rand::thread_rng()){
+            // let solution = DR_Cube_BFS::solve_eo_to_dr(**chosen);
+            let sol_len = bfs_res.depth;
+            if sol_len != len{
+                continue
+            }
+            return Ok((DR_Cube_BFS::int_moves_to_str(bfs_res.moves.to_vec())))
+        }
+        else{
+            return Err("Somehow failed".to_string())
+        }
+    }
+}
+
+fn dr_practice(){
+    let bfs = DR_Cube_BFS::eo_to_dr_dist();
+    let dr_minus: Vec<(&EOToDRCube, &DR_Cube_BFS)> = dr_get_dist_subset(&8,&7,&bfs);
+    println!("drminus size {}",dr_minus.len());
+    let mut start_vec = vec![];
+    for i in 0..10{
+        // start_vec.push(get_random_case_of_len(6,&bfs,&htr_checker).unwrap())
+        start_vec.push(dr_get_random_case_of_len(6, &dr_minus).unwrap())
+        
+    }
+    println!("{:?}",start_vec);
+}
+
 
 fn main(){
-    // let o =  Cube{
-    //     corners: 70936234050,
-    //     edges: 74381997087197250,
-    // };
+    // // let nc = c.b();
+    // let (mut scrambled_cube, scramble_vec) = c.do_scramble(scramble);
 
-    // println!("{:?}",o);
 
-    // other_dr();
-    let tmp = cube_bfs::gen_all_htr_solutions();
-    // let res = drawing::show_all_dr_by_ec(4,2);
-
-    // let mut file = File::create("full.html").expect("creating file");
-
-    // // Write data to the file
-    // file.write_all(&res.as_bytes());
-    // Ok(())
-    // let solutions = cube_bfs::gen_all_dr_solutions();
-    // let k = solutions.values();
-    // let mut p = 0;
-    // for o in k{
-    //     // if (o.dr_corner_count() >3) && (o.dr_edge_count() >1){
-    //         let solution = o.get_solution_from_scr();
-        
-    //         let solution_string = cube_bfs::int_moves_to_str(solution);
-    //         let mut new_cube = Cube::new();
-    //         for movee in o.moves{
-    //             new_cube = new_cube.perform_move(movee);
-    //         }
-    //         let svg = drawing::get_cube_svg(new_cube);
-            
-    //         println!("{} {:?} ",svg,solution_string);
-    //         break;
+    // for i in 0u64..10_000_000{
+    //     for movee in &scramble_vec{
+    //         scrambled_cube = scrambled_cube.perform_move(*movee);
+    //     }
         
     // }
-    // println!("{p} ");
-    // gen_all_dr();
+    // let c = base_cube::DRToHTRCube::construct();
 
-    // let svg = drawing::example();
-    // println!("{svg}");
+    // println!("old: {:?}",c);
+    // let c = EOToDRCube::construct();
+    // println!("{:?}",c);
+    // let (scrambled_cube, scramble) = c.do_scramble("R U L".to_string());
+    // // let (solution_arr, sol_len) = cube_bfs::Cube_BFS::solve_dr_to_htr(&scramble,&htr_checker).unwrap();
+    // // println!("{:?}",scrambled_cube);
+    // // println!("{:?}",scrambled_cube.count_non_htr_corners());
+    // // std::process::exit(0);
+    // // println!("{:?}",c);
+    
+    // // cube_bfs::Cube_BFS::dr_to_htr_checker();
+    // // let (scrambled_cube, scramble) = c.do_scramble("U L2 U' L2 U2 B2 D L2 D'".to_string());
+    // println!("{:?}",scrambled_cube);
+    // println!("{:?},{:?}",scrambled_cube.edges_minus(),scrambled_cube.corners_minus());
 
-    // let number: u64 = 42;
-    // let binary_string = format!("{:b}", number);
-    // println!("Binary representation: {}", binary_string);
+    // dr_practice();
 
-    // let o = Cube{
-    //     corners: 247132686368,
-    //     edges: 407901468851537952,
-    // };
+    let tmp = cube_bfs::bfs::<EOOnlyCube>();
 
-    // let (o, trash) = o.do_scramble("F' B2 L B' U' B' R D2 F R2 L2 F B L2 D2 F' R2 U2 B' R' F2".to_string());
+    println!("{:?}",tmp)
 
-    // let mut a = drawing::get_cube_svg(o);
-    // for i in 0..1_000_000{
-    //     let c = drawing::get_cube_svg(o);
-    //     a = c;
+    // 
+    // let sol_string = cube_bfs::Cube_BFS::int_moves_to_str(solution_arr.to_vec());
+    // println!("{sol_string}");
+
+    // Result<[u8;20],&str>
+    // let sols: Vec<Result<[u8;20],&str>> = bfs.par_iter().map(|(cube,_)| cube_bfs::Cube_BFS::dr_to_htr_fixed_len(*cube, &htr_checker, 4)).collect();
+    // println!("{:?}",sols);
+    
+    
+    // for (cube,_) in bfs{
+    //     // let t = cube.moves.to_vec();
+    //     let (sol, sol_len )= cube_bfs::Cube_BFS::solve_dr_to_htr(cube, &htr_checker).unwrap();
+    //     println!("{:?}",sol);
     // }
-    // println!("{}",a);
+    // println!("{:?}",solution_arr);
+    
+    // let scramble = "D' L2 U F2 R2 U2 R2 U F2 U F2".to_string();
+    // let (mut scrambled_cube, scramble_vec) = c.do_scramble(scramble);
 
-    // let mut file = File::create("t2.svg").expect("creating file");
-
-    // // Write data to the file
-    // file.write_all(&a.as_bytes());
-    // Ok(())
-
+    // let cbf = cube_bfs::Cube_BFS::new();
+    // let ov = cbf.dr_to_htr_dist();
+    // // println!("{:?}",ov);
+    // let sol = ov.get(&scrambled_cube).unwrap();
+    // println!("{:?}",cube_bfs::Cube_BFS::int_moves_to_str(sol.invert_moves()));
+    // println!("after move: {:?}",scrambled_cube);
+    
 }
+
